@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/jpeg"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/disintegration/imaging"
 )
@@ -28,13 +30,24 @@ var pics = []string{
 func main() {
 	for _, p := range pics {
 		img := openPic(p)
-		resizePic(img)
+		for name, filter := range filters {
+			base := filepath.Base(p)
+			outname := filepath.Join(
+				"out",
+				base,
+				fmt.Sprintf("%s_%s", name, p),
+			)
+			os.MkdirAll(filepath.Dir(outname), 0777)
+			resizePic(img, filter, outname)
+		}
+
 	}
 
 }
 
 func openPic(picturePath string) image.Image {
-	file, err := os.Open(picturePath)
+
+	file, err := os.Open(filepath.Join("src", picturePath))
 	defer file.Close()
 	if err != nil {
 		log.Println(err)
@@ -46,11 +59,12 @@ func openPic(picturePath string) image.Image {
 	return img
 }
 
-func resizePic(img image.Image) {
+func resizePic(img image.Image, filter imaging.ResampleFilter, out string) {
+	log.Println(out)
 	//dstImage128 := imaging.Resize(img, 128, 128, imaging.Lanczos)
-	thumb := imaging.Thumbnail(img, 700, 700, imaging.CatmullRom)
-	err := imaging.Save(thumb, "out/dst.jpg")
+	thumb := imaging.Thumbnail(img, 700, 700, filter)
+	err := imaging.Save(thumb, out)
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 }
